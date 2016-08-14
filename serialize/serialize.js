@@ -40,6 +40,16 @@ class Serializeable
 		return instance;
 	}
 
+	static clearSerializationCache()
+	{
+		Serializeable.serializationCache.clear();
+	}
+
+	static clearDeserializationCache()
+	{
+		Serializeable.deserializationCache.clear();
+	}
+
 	constructor()
 	{
 		this.id = uuid.v4();
