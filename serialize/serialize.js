@@ -202,6 +202,4 @@ let SERIALIZATION_MAP = {
 	SerializeableObject: SerializeableObject
 };
 
-module.exports = {
-	Serializeable: Serializeable
-};
+module.exports = Serializeable;

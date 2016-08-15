@@ -1,6 +1,6 @@
 #!/bin/env node
 
-let Serializeable = require('./serialize').Serializeable;
+let Serializeable = require('./serialize');
 
 const util = require('util');
 
