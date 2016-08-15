@@ -1,6 +1,8 @@
 #!/bin/env node
 
-let Serializeable = require('./serialize');
+let Serializeable = require('./serialize').Serializeable;
+
+const util = require('util');
 
 class Foo extends Serializeable
 {
@@ -28,7 +30,18 @@ class Baz extends Serializeable
 	{
 		super();
 		this.foo = foo;
+		this.foobar = null;
+		this.brazzers = null;
+		this.realitykings = null;
+		this.tushy = null;
+	}
+
+	setValues()
+	{
 		this.foobar = "I'm baz";
+		this.brazzers = [foo, 'Hello World'];
+		this.realitykings = new Map([[this, foo], [foo, this], ['Hello', 'World']]);
+		this.tushy = {foo: foo, this: this, Hello: 'World'}
 	}
 
 	getPackage()
@@ -38,7 +51,7 @@ class Baz extends Serializeable
 
 	getAttributeNames()
 	{
-		return ['foo'];
+		return ['foo', 'foobar', 'brazzers', 'realitykings', 'tushy'];
 	}
 }
 
@@ -58,20 +71,25 @@ let MEMORY = {};
 Serializeable.MEMORY = MEMORY;
 
 let foo = new Foo();
+foo.baz.setValues();
 
 console.log('Original foo:');
-console.log(foo);
+console.log(util.inspect(foo, {depth: 20}));
 
-let id = foo.serialize();
+let id = Serializeable.serialize(foo);
 
 console.log(`Id of foo is ${id}`);
 
 console.log('Serializeable memory:');
-console.log(MEMORY);
+console.log(util.inspect(MEMORY, {depth: 20}));
 
 let serialized = JSON.stringify(MEMORY);
 console.log('Serialized memory:');
 console.log(serialized);
+
+MEMORY = JSON.parse(serialized);
+
+Serializeable.MEMORY = MEMORY;
 
 let hopefullyFoo = Serializeable.deserialize(id);
 
