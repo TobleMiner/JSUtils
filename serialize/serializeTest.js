@@ -36,7 +36,7 @@ class Baz extends Serializeable
 		this.tushy = null;
 	}
 
-	setValues()
+	setValues(foo)
 	{
 		this.foobar = "I'm baz";
 		this.brazzers = [foo, 'Hello World'];
@@ -71,14 +71,14 @@ let MEMORY = {};
 Serializeable.MEMORY = MEMORY;
 
 let foo = new Foo();
-foo.baz.setValues();
+foo.baz.setValues(foo);
 
 console.log('Original foo:');
 console.log(util.inspect(foo, {depth: 20}));
 
 let id = Serializeable.serialize(foo);
 
-console.log(`Id of foo is ${id}`);
+console.log(`Id of foo is ${id.id}`);
 
 console.log('Serializeable memory:');
 console.log(util.inspect(MEMORY, {depth: 20}));
