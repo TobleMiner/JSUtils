@@ -120,8 +120,11 @@ class SerializeableMap extends Serializeable
 		let obj = {id: this.getId(), module: this.getPackage(), type: this.constructor.name, keys: [], values: []};
 		for(let key of this.map.keys())
 		{
+			let value = this.map.get(key);
+			if(value instanceof Function)
+				continue;
 			obj.keys.push(Serializeable.serialize(key));
-			obj.values.push(Serializeable.serialize(this.map.get(key)));
+			obj.values.push(Serializeable.serialize(value));
 		}
 		MEMORY[this.getId()] = obj;
 		return {serialized: true, id: this.getId()};
@@ -150,6 +153,8 @@ class SerializeableArray extends Serializeable
 		for(let key in this.data)
 		{
 			let value = this.data[key];
+			if(value instanceof Function)
+				continue;
 			obj.data[key] = Serializeable.serialize(value);
 		}
 		MEMORY[this.getId()] = obj;
@@ -180,7 +185,11 @@ class SerializeableObject extends Serializeable
 	{
 		let obj = {id: this.getId(), module: this.getPackage(), type: this.constructor.name, data: {}};
 		for(let attr in this.obj)
+		{
+			if(this.obj[attr] instanceof Function)
+				continue;
 			obj.data[attr] = Serializeable.serialize(this.obj[attr]);
+		}
 		MEMORY[this.getId()] = obj;
 		return {serialized: true, id: this.getId()};
 	}
