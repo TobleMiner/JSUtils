@@ -14,6 +14,11 @@ class Serializeable
 		return MEMORY;
 	}
 
+	static addSerializationWrapper(type, wrapper)
+	{
+		Serializeable.SERIALIZATION_WRAPPERS.set(type, wrapper);
+	}
+
 	static deserialize(obj)
 	{
 		if(!(obj.serialized))
@@ -45,12 +50,12 @@ class Serializeable
 		}
 		let id = uuid.v4();
 		Serializeable.serializationCache.set(obj, {serialized: true, id: id});
-		if(obj instanceof Array)
-			return new SerializeableArray(id, obj).serialize();
-		if(obj instanceof Map)
-			return new SerializeableMap(id, obj).serialize();
-		if(obj instanceof Object)
-			return new SerializeableObject(id, obj).serialize();
+		for(let type of Serializeable.SERIALIZATION_WRAPPERS.keys())
+		{
+			if(obj instanceof type)
+				return new (Serializeable.SERIALIZATION_WRAPPERS.get(type))(id, obj).serialize();
+		}
+		return new SerializeableObject(id, obj).serialize();
 	}
 
 	static clearSerializationCache()
@@ -105,60 +110,73 @@ class Serializeable
 
 Serializeable.serializationCache = new Map();
 Serializeable.deserializationCache = new Map();
+Serializeable.SERIALIZATION_WRAPPERS = new Map();
 
-class SerializeableMap extends Serializeable
+class SerializationWrapper extends Serializeable
 {
-	constructor(id, map=new Map())
+	constructor(id, obj)
 	{
 		super();
 		this.id = id;
-		this.map = map;
+		this.obj = obj;
+	}
+
+	storeAndGetId(obj)
+	{
+		MEMORY[this.getId()] = obj;
+		return {serialized: true, id: this.getId()};
+	}
+}
+
+class SerializeableMap extends SerializationWrapper
+{
+	constructor(id, map=new Map())
+	{
+		super(id, map);
 	}
 
 	serialize()
 	{
 		let obj = {id: this.getId(), module: this.getPackage(), type: this.constructor.name, keys: [], values: []};
-		for(let key of this.map.keys())
+		for(let key of this.obj.keys())
 		{
-			let value = this.map.get(key);
+			let value = this.obj.get(key);
 			if(value instanceof Function)
 				continue;
 			obj.keys.push(Serializeable.serialize(key));
 			obj.values.push(Serializeable.serialize(value));
 		}
-		MEMORY[this.getId()] = obj;
-		return {serialized: true, id: this.getId()};
+		return this.storeAndGetId(obj);
 	}
 
 	deserialize(obj)
 	{
 		for(let i = 0; i < obj.keys.length; i++)
-			this.map.set(Serializeable.deserialize(obj.keys[i]), Serializeable.deserialize(obj.values[i]));
-		return this.map;
+			this.obj.set(Serializeable.deserialize(obj.keys[i]), Serializeable.deserialize(obj.values[i]));
+		return this.obj;
 	}
 }
 
-class SerializeableArray extends Serializeable
+Serializeable.addSerializationWrapper(Map, SerializeableMap);
+
+class SerializeableArray extends SerializationWrapper
 {
 	constructor(id, data=[])
 	{
-		super();
-		this.id = id;
-		this.data = data;
+		super(id, data);
 	}
 
 	serialize()
 	{
 		let obj = {id: this.getId(), module: this.getPackage(), type: this.constructor.name, data: {}};
-		for(let key in this.data)
+		for(let key in this.obj)
 		{
-			let value = this.data[key];
+			let value = this.obj[key];
 			if(value instanceof Function)
 				continue;
 			obj.data[key] = Serializeable.serialize(value);
 		}
-		MEMORY[this.getId()] = obj;
-		return {serialized: true, id: this.getId()};
+		return this.storeAndGetId(obj);
 	}
 
 	deserialize(obj)
@@ -166,19 +184,19 @@ class SerializeableArray extends Serializeable
 		for(let key in obj.data)
 		{
 			let entry = obj.data[key];
-			this.data[key] = Serializeable.deserialize(entry);
+			this.obj[key] = Serializeable.deserialize(entry);
 		}
-		return this.data;
+		return this.obj;
 	}
 }
 
-class SerializeableObject extends Serializeable
+Serializeable.addSerializationWrapper(Array, SerializeableArray);
+
+class SerializeableObject extends SerializationWrapper
 {
 	constructor(id, obj={})
 	{
-		super();
-		this.id = id;
-		this.obj = obj;
+		super(id, obj);
 	}
 
 	serialize()
@@ -190,8 +208,7 @@ class SerializeableObject extends Serializeable
 				continue;
 			obj.data[attr] = Serializeable.serialize(this.obj[attr]);
 		}
-		MEMORY[this.getId()] = obj;
-		return {serialized: true, id: this.getId()};
+		return this.storeAndGetId(obj);
 	}
 
 	deserialize(obj)
@@ -211,4 +228,7 @@ let SERIALIZATION_MAP = {
 	SerializeableObject: SerializeableObject
 };
 
-module.exports = Serializeable;
+module.exports = {
+	Serializeable: Serializeable,
+	SerializationWrapper: SerializationWrapper
+};

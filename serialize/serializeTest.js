@@ -1,6 +1,6 @@
 #!/bin/env node
 
-let Serializeable = require('./serialize');
+let Serializeable = require('./serialize').Serializeable;
 
 const util = require('util');
 
@@ -42,6 +42,7 @@ class Baz extends Serializeable
 		this.brazzers = [foo, 'Hello World'];
 		this.realitykings = new Map([[this, foo], [foo, this], ['Hello', 'World']]);
 		this.tushy = {foo: foo, this: this, Hello: 'World'}
+		this.teamskeet = new FooBarBaz(42, 42);
 	}
 
 	getPackage()
@@ -51,13 +52,72 @@ class Baz extends Serializeable
 
 	getAttributeNames()
 	{
-		return ['foo', 'foobar', 'brazzers', 'realitykings', 'tushy'];
+		return ['foo', 'foobar', 'brazzers', 'realitykings', 'tushy', 'teamskeet'];
+	}
+}
+
+class FooBarBaz // Represents a foreign object I can't optimize for serializeability
+{
+	constructor(x, y)
+	{
+		this.x = x;
+		this.y = y;
+		this.init(x, y);
+	}
+
+	init(x, y)
+	{
+		console.log(`Some obscure internal function that slaughters kittens and reappoints George W. Bush if initialization parameters are incorrect: (${x}, ${y})`);
+	}
+}
+
+class FooBarBazWrapper extends Serializeable
+{
+	constructor(id, obj)
+	{
+		super();
+		this.id = id;
+		this.obj = obj;
+	}
+
+	serialize()
+	{
+		let obj = {id: this.getId(), module: this.getPackage(), type: this.constructor.name, data: {}};
+		for(let key of this.getAttributeNames())
+		{
+			let value = this.obj[key];
+			if(value instanceof Function)
+				continue;
+			obj.data[key] = Serializeable.serialize(value);
+		}
+		Serializeable.MEMORY[this.getId()] = obj;
+		return {serialized: true, id: this.getId()};
+	}
+
+	deserialize(obj)
+	{
+		for(let key of this.getAttributeNames())
+		{
+			obj.data[key] = Serializeable.deserialize(obj.data[key]);
+		}
+		return new FooBarBaz(obj.data['x'], obj.data['y']);
+	}
+
+	getAttributeNames()
+	{
+		return ['x', 'y'];
+	}
+
+	getPackage()
+	{
+		return './serializeTest';
 	}
 }
 
 let SERIALIZATION_MAP = {
 	Foo: Foo,
-	Baz: Baz
+	Baz: Baz,
+	FooBarBazWrapper: FooBarBazWrapper
 };
 
 module.exports = {
@@ -69,6 +129,7 @@ module.exports = {
 let MEMORY = {};
 
 Serializeable.MEMORY = MEMORY;
+Serializeable.addSerializationWrapper(FooBarBaz, FooBarBazWrapper);
 
 let foo = new Foo();
 foo.baz.setValues(foo);
