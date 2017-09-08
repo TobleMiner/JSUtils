@@ -6,8 +6,8 @@ module.exports = function(...args) {
 			constructor(...cargs)
 			{
 				let clazz;
-				while((clazz = classes.pop())) {
-					let largs = cargs.slice();
+				while((clazz = classes.shift())) {
+					let largs = cargs.splice(0, clazz.length);
 					largs.unshift(clazz);
 					let sub = new
 						(Function.prototype.bind
@@ -21,7 +21,7 @@ module.exports = function(...args) {
 	}(args.slice());
 
 	let clazz;
-	while((clazz = args.pop())) {
+	while((clazz = args.shift())) {
 		Object.getOwnPropertyNames(clazz.prototype)
 			.filter(key => key !== 'constructor')
 			.forEach(key => {
