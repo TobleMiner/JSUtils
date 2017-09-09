@@ -5,8 +5,7 @@ module.exports = function(...args) {
 		return class {
 			constructor(...cargs)
 			{
-				let clazz;
-				while((clazz = classes.shift())) {
+				classes.forEach(clazz => {
 					/* Split of arguments that will be consumed
 					 * by constructor of clazz
 					 */
@@ -25,20 +24,19 @@ module.exports = function(...args) {
 					Object.getOwnPropertyNames(sub).forEach(key => {
 						this[key] = sub[key];
 					});
-				}
+				});
 			}
 		}
 	}(args.slice());
 
-	let clazz;
-	while((clazz = args.shift())) {
+	args.forEach(clazz => {
 		Object.getOwnPropertyNames(clazz.prototype)
 			.filter(key => key !== 'constructor')
 			.forEach(key => {
 				mix.prototype[key] = clazz.prototype[key];
 			}
 		);
-	}
+	});
 
 	return mix;
 };
